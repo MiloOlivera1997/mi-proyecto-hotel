@@ -1,0 +1,102 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+ //1 ROL USER 
+enum Rol{
+  admin
+  supervisor
+  staff
+}
+
+enum Status{
+  pending
+  inProgress
+  completed
+}
+
+//2 MODEL USER
+model User{
+  id Int @id @default(autoincrement())
+  name String
+  email String @unique
+  password String
+  rol Rol
+
+  //relacion con area (Un usuario pertenece a un area)
+  area Area @relation(fields: [areaId], references: [id])
+  areaId Int
+
+  // Relaciones inversas (Para que Prisma sepa qué tiene este usuario)
+  timeEntries       TimeEntry[]
+  pushNotifications PushNotification[]
+}
+
+//3 MODEL AREA
+model Area{
+  id Int @id @default(autoincrement())
+  name String @unique
+  description String
+
+  //Relaciones: un area tiene muchos usuarios y muchas tareas
+  users User[]
+  tasks Task[]
+  
+}
+
+//4 MODEL TASK
+model Task{
+  id Int @id @default(autoincrement())
+  title String
+  description String
+  notes        String?
+  status       Status   @default(pending)
+  
+  // Datos específicos para Limpieza/Pisos
+  roomNumber   Int?
+  isDeparture  Boolean  @default(false)
+
+  // Relación con Área (La tarea pertenece al flujo del área)
+  area         Area     @relation(fields: [areaId], references: [id])
+  areaId       Int
+  
+  createdAt    DateTime @default(now())
+  
+}
+
+//5 MODEL TIMEENTRY
+model TimeEntry{
+  id Int @id @default(autoincrement())
+  hourEntry  DateTime  @default(now())
+  hourExit   DateTime? // Opcional porque al entrar aún no sabes cuándo sales
+  
+  user       User      @relation(fields: [userId], references: [id])
+  userId     Int
+  
+}
+
+//6 MODEL PUSHNOTIFICATION
+model PushNotification{
+ id       Int    @id @default(autoincrement())
+  endpoint String @unique
+  p256dh   String // Clave de cifrado necesaria para Web Push
+  auth     String // Clave de autenticación necesaria para Web Push
+  
+  user     User   @relation(fields: [userId], references: [id])
+  userId   Int
+  
+}
+
+
